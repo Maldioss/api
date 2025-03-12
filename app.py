@@ -1,6 +1,7 @@
+
+import os
 from flask import Flask, jsonify
 import requests
-
 app = Flask(__name__)
 
 @app.route('/dolar-blue', methods=['GET'])
