@@ -15,30 +15,36 @@ def get_dolar_blue():
     url_historial = "https://api.bluelytics.com.ar/v2/evolution.json"
 
     try:
-        # Obtener el valor actual
+        # ✅ Obtener el valor actual
         response_actual = requests.get(url_actual)
         response_actual.raise_for_status()
         data_actual = response_actual.json()
-        
+
         compra_actual = data_actual["blue"]["value_buy"]
         venta_actual = data_actual["blue"]["value_sell"]
 
-        # Obtener el valor de ayer
+        # ✅ Obtener los valores históricos
         response_historial = requests.get(url_historial)
         response_historial.raise_for_status()
         data_historial = response_historial.json()
 
-        # Filtrar por la fecha de ayer
+        # ✅ Buscar el valor de ayer
         fecha_ayer = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        valores_ayer = next((item for item in data_historial if item["date"] == fecha_ayer), None)
+        valores_ayer = [item for item in data_historial if item["date"] == fecha_ayer]
 
         if valores_ayer:
-            compra_ayer = valores_ayer["value_buy"]
-            venta_ayer = valores_ayer["value_sell"]
+            # Tomamos el último valor de ayer en caso de haber varios registros
+            ultimo_ayer = valores_ayer[-1]
+            compra_ayer = ultimo_ayer["value_buy"]
+            venta_ayer = ultimo_ayer["value_sell"]
 
-            # Calcular variación porcentual
-            variacion_compra = ((compra_actual - compra_ayer) / compra_ayer) * 100
-            variacion_venta = ((venta_actual - venta_ayer) / venta_ayer) * 100
+            # ✅ Evitar divisiones por cero y cálculos erróneos
+            if compra_ayer > 0 and venta_ayer > 0:
+                variacion_compra = round(((compra_actual - compra_ayer) / compra_ayer) * 100, 2)
+                variacion_venta = round(((venta_actual - venta_ayer) / venta_ayer) * 100, 2)
+            else:
+                variacion_compra = None
+                variacion_venta = None
         else:
             variacion_compra = None
             variacion_venta = None
