@@ -3,13 +3,12 @@ import requests
 
 app = Flask(__name__)
 
-# Endpoint para obtener el precio del dólar blue
 @app.route('/dolar-blue', methods=['GET'])
 def get_dolar_blue():
     url = "https://api.bluelytics.com.ar/v2/latest"
-    response = requests.get(url)
-
-    if response.status_code == 200:
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Lanza una excepción para códigos de error HTTP (4xx o 5xx)
         data = response.json()
         dolar_blue = {
             "compra": data["blue"]["value_buy"],
@@ -17,9 +16,12 @@ def get_dolar_blue():
             "variacion": data["blue"]["value_sell"] - data["blue"]["value_buy"]
         }
         return jsonify(dolar_blue)
-    else:
-        return jsonify({"error": "No se pudo obtener la información"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Error de solicitud: {e}"}), 500
+    except KeyError:
+        return jsonify({"error": "Estructura de respuesta de la API inesperada"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Error inesperado: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
