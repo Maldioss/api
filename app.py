@@ -1,6 +1,7 @@
 import os
 from flask import Flask, jsonify
 import requests
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -10,17 +11,46 @@ def home():
 
 @app.route('/dolar-blue', methods=['GET'])
 def get_dolar_blue():
-    url = "https://api.bluelytics.com.ar/v2/latest"
+    url_actual = "https://api.bluelytics.com.ar/v2/latest"
+    url_historial = "https://api.bluelytics.com.ar/v2/evolution.json"
+
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
+        # Obtener el valor actual
+        response_actual = requests.get(url_actual)
+        response_actual.raise_for_status()
+        data_actual = response_actual.json()
+        
+        compra_actual = data_actual["blue"]["value_buy"]
+        venta_actual = data_actual["blue"]["value_sell"]
+
+        # Obtener el valor de ayer
+        response_historial = requests.get(url_historial)
+        response_historial.raise_for_status()
+        data_historial = response_historial.json()
+
+        # Filtrar por la fecha de ayer
+        fecha_ayer = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        valores_ayer = next((item for item in data_historial if item["date"] == fecha_ayer), None)
+
+        if valores_ayer:
+            compra_ayer = valores_ayer["value_buy"]
+            venta_ayer = valores_ayer["value_sell"]
+
+            # Calcular variación porcentual
+            variacion_compra = ((compra_actual - compra_ayer) / compra_ayer) * 100
+            variacion_venta = ((venta_actual - venta_ayer) / venta_ayer) * 100
+        else:
+            variacion_compra = None
+            variacion_venta = None
+
         dolar_blue = {
-            "compra": data["blue"]["value_buy"],
-            "venta": data["blue"]["value_sell"],
-            "variacion": data["blue"]["value_sell"] - data["blue"]["value_buy"]
+            "compra": compra_actual,
+            "venta": venta_actual,
+            "variacion_compra_%": variacion_compra,
+            "variacion_venta_%": variacion_venta
         }
         return jsonify(dolar_blue)
+
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"Error de solicitud: {e}"}), 500
     except KeyError:
