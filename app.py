@@ -1,15 +1,19 @@
-
 import os
 from flask import Flask, jsonify
 import requests
+
 app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return jsonify({"mensaje": "API de Dólar Blue funcionando"}), 200
 
 @app.route('/dolar-blue', methods=['GET'])
 def get_dolar_blue():
     url = "https://api.bluelytics.com.ar/v2/latest"
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Lanza una excepción para códigos de error HTTP (4xx o 5xx)
+        response.raise_for_status()
         data = response.json()
         dolar_blue = {
             "compra": data["blue"]["value_buy"],
@@ -25,5 +29,5 @@ def get_dolar_blue():
         return jsonify({"error": f"Error inesperado: {e}"}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Obtener el puerto de la variable de entorno o usar 5000 por defecto
-    app.run(debug=False, host='0.0.0.0', port=port) # Se cambió debug a False, y se agregó host='0.0.0.0'
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
